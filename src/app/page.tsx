@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // useRefを追加
 import liff from '@line/liff';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -12,6 +12,7 @@ export default function MeexApp() {
   const [loading, setLoading] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
+  const qrRef = useRef<HTMLCanvasElement>(null); // QRコードの画像化用
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzkBZ7OiY2_rJL7TSlJ533mpHHrn0gLTI_H40YPru_gtIFz9Z907sqVojAAdLuwbDsg/exec"; 
   const MY_LIFF_ID = "2008941664-iteSq7Q1";
@@ -19,6 +20,20 @@ export default function MeexApp() {
   useEffect(() => {
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.error(err));
   }, []);
+
+  // QRコードを画像としてダウンロードする関数
+  const downloadQR = () => {
+    if (qrRef.current) {
+      const canvas = qrRef.current.querySelector('canvas');
+      if (canvas) {
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `meex_ticket_${formData.name}.png`;
+        link.click();
+      }
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,10 +112,18 @@ export default function MeexApp() {
         <div className="w-full max-w-sm">
           <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
             <h2 className="text-5xl mb-8 border-b-4 border-black pb-4 italic tracking-tighter">{formData.name} 様</h2>
-            <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
+            <div ref={qrRef} className="bg-white p-4 inline-block mb-6 border-2 border-black">
               <QRCodeCanvas value={formData.id} size={180} />
             </div>
-            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic uppercase">1 Drink Ticket</div>
+            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic uppercase mb-6">1 Drink Ticket</div>
+            
+            {/* 保存ボタンと注意書き */}
+            <button onClick={downloadQR} className="w-full bg-blue-600 text-white p-4 uppercase font-black text-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 mb-4">画像を保存する</button>
+            <p className="text-sm font-black text-red-600 bg-red-100 p-2 border-2 border-red-600">
+              ⚠️ ダウンロードをお忘れなく！<br/>
+              当日この画面（QRコード）の提示が必要です。<br/>
+              うまく保存できない場合はスクリーンショットを撮ってください。
+            </p>
           </div>
         </div>
       )}
@@ -109,7 +132,7 @@ export default function MeexApp() {
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 uppercase">Staff Login</h2>
           <input type="password" placeholder="Passcode" className="w-full p-4 border-4 border-black mb-4 text-center text-xl" value={passcode} onChange={(e) => setPasscode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (passcode === "meex0213" ? setView('admin') : alert("NG"))} />
-          <button onClick={() => passcode === "meex0213" ? setView('admin') : alert("NG")} className="w-full bg-black text-white p-4 uppercase text-xl">Unlock</button>
+          <button onClick={() => passcode === "meex0213" ? setView('admin') : alert("NG")} className="w-full bg-black text-white p-4 mb-4 uppercase text-xl text-center">Unlock</button>
         </div>
       )}
 
