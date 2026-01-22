@@ -74,6 +74,7 @@ export default function MeexApp() {
         <p className="text-[10px] tracking-[0.3em] border-y-2 border-black py-1 mt-2 inline-block px-4 font-black">VOL.1 @ BAR REEF</p>
       </header>
 
+      {/* 1. 登録画面 */}
       {view === 'register' && (
         <div className="w-full max-w-sm bg-black text-white p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-8 italic text-[#f3b32a] text-left">混ざりに行く。</h2>
@@ -86,6 +87,7 @@ export default function MeexApp() {
         </div>
       )}
 
+      {/* 2. チケット画面（文言変更済み） */}
       {view === 'ticket' && (
         <div className="w-full max-w-sm">
           <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
@@ -93,11 +95,16 @@ export default function MeexApp() {
             <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
               <QRCodeCanvas value={formData.id} size={180} />
             </div>
-            <div className="bg-black text-[#f3b32a] py-4 text-2xl font-black italic uppercase">Beer Discount OK</div>
+            {/* 新しい文言 */}
+            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic leading-tight">
+              前売りチケット<br/>（1ドリンク付）¥1,000
+            </div>
           </div>
+          <p className="mt-8 text-xs opacity-50 italic">2.13 FRI @BAR REEF</p>
         </div>
       )}
 
+      {/* 3. スタッフ用ログイン画面 */}
       {view === 'admin-login' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center uppercase">Staff Login</h2>
@@ -107,6 +114,7 @@ export default function MeexApp() {
         </div>
       )}
 
+      {/* 4. カメラスキャン画面 */}
       {view === 'admin' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">SCANNER</h2>
