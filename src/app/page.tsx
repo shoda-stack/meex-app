@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import liff from '@line/liff';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Html5Qrcode } from 'html5-qrcode'; // ScannerからHtml5Qrcodeに変更（より精密に制御するため）
+import { Html5Qrcode } from 'html5-qrcode';
 
 export default function MeexApp() {
   const [view, setView] = useState('register'); 
@@ -19,26 +19,28 @@ export default function MeexApp() {
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.error(err));
   }, []);
 
-  // 手動でカメラを起動する関数
   const startScanning = async () => {
     const html5QrCode = new Html5Qrcode("reader");
     setScanner(html5QrCode);
-    setAdminStatus("カメラ準備中...");
+    setAdminStatus("スキャン待機中...");
 
     try {
       await html5QrCode.start(
-        { facingMode: "environment" }, // 背面カメラを使用
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { facingMode: "environment" }, 
+        { 
+          fps: 20, 
+          qrbox: (viewWidth, viewHeight) => {
+            return { width: viewWidth * 0.7, height: viewWidth * 0.7 };
+          }
+        },
         (decodedText) => {
           if (navigator.vibrate) navigator.vibrate(200);
           handleRedeem(decodedText);
         },
         (errorMessage) => {}
       );
-      setAdminStatus("スキャン中...");
     } catch (err) {
-      console.error(err);
-      setAdminStatus("カメラの起動に失敗しました。設定を確認してください。");
+      setAdminStatus("カメラエラー: 権限を確認してください");
     }
   };
 
@@ -53,8 +55,8 @@ export default function MeexApp() {
   };
 
   const handleRedeem = async (scanId: string) => {
-    if (adminStatus === '確認中...') return;
-    setAdminStatus('確認中...');
+    if (adminStatus.includes('確認中')) return;
+    setAdminStatus(`確認中: ${scanId}`);
     try {
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ action: "redeem", id: scanId }) });
       const result = await res.json();
@@ -62,7 +64,7 @@ export default function MeexApp() {
       else if (result.status === "already_used") setAdminStatus("⚠️ 使用済みです");
       else setAdminStatus("❌ 無効なIDです");
     } catch (error) { setAdminStatus("通信エラー"); }
-    setTimeout(() => setAdminStatus(''), 3000);
+    setTimeout(() => setAdminStatus('スキャン待機中...'), 3000);
   };
 
   const handleUnlock = () => {
@@ -91,4 +93,36 @@ export default function MeexApp() {
 
       {view === 'ticket' && (
         <div className="w-full max-w-sm">
-          <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_
+          <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
+            <h2 className="text-5xl mb-8 border-b-4 border-black pb-4 italic tracking-tighter">{formData.name} 様</h2>
+            <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
+              <QRCodeCanvas value={formData.id} size={180} />
+            </div>
+            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic leading-tight">前売りチケット<br/>（1ドリンク付）¥1,000</div>
+          </div>
+        </div>
+      )}
+
+      {view === 'admin-login' && (
+        <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
+          <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center uppercase">Staff Login</h2>
+          <input type="password" placeholder="合言葉を入力" className="w-full p-4 border-4 border-black mb-4 text-center text-xl" value={passcode} onChange={(e) => setPasscode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleUnlock()} />
+          <button onClick={handleUnlock} className="w-full bg-black text-white p-4 mb-4 uppercase">Unlock</button>
+          <button onClick={() => setView('register')} className="text-xs underline text-gray-400">Cancel</button>
+        </div>
+      )}
+
+      {view === 'admin' && (
+        <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
+          <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">SCANNER</h2>
+          <div id="reader" className="w-full mb-4 bg-black min-h-[250px] overflow-hidden rounded-lg"></div>
+          <button onClick={startScanning} className="w-full bg-blue-600 text-white p-4 mb-4 rounded-lg font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1">カメラを起動</button>
+          <div className="text-xl mb-8 font-black text-red-600 min-h-[40px] text-center leading-tight">{adminStatus}</div>
+          <button onClick={() => { if(scanner) scanner.stop(); setView('register'); }} className="text-sm underline text-gray-500 uppercase">Logout</button>
+        </div>
+      )}
+
+      <footer className="mt-auto py-12 text-[9px] tracking-[0.4em] opacity-40 uppercase font-normal leading-loose">Craftbank × Spicecurry Hozan<br/>Stay Mixed, Stay Connected.</footer>
+    </div>
+  );
+}
