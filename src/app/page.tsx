@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
+// 画面を画像に変換するツールをインポート
+import html2canvas from 'html2canvas';
 
 export default function MeexApp() {
   const [view, setView] = useState('register'); 
@@ -12,22 +14,27 @@ export default function MeexApp() {
   const [passcode, setPasscode] = useState('');
   const [scanner, setScanner] = useState<Html5Qrcode | null>(null);
   
-  // QRコードを「本物の画像」に変換するための設定
-  const [qrImageUrl, setQrImageUrl] = useState<string>("");
-  const canvasRef = useRef<HTMLDivElement>(null);
+  // 生成されたチケット画像のURLを入れる変数
+  const [ticketImageUrl, setTicketImageUrl] = useState<string>("");
+  // 画像化する範囲を指定するための参照
+  const ticketRef = useRef<HTMLDivElement>(null);
 
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzkBZ7OiY2_rJL7TSlJ533mpHHrn0gLTI_H40YPru_gtIFz9Z907sqVojAAdLuwbDsg/exec"; 
 
-  // チケット表示に切り替わった瞬間に、Canvas(図形)をImage(写真データ)に変換する
+  // チケット表示時に、チケット全体を画像に変換する
   useEffect(() => {
-    if (view === 'ticket' && formData.id) {
+    if (view === 'ticket' && formData.id && ticketRef.current) {
+      // QRコードの描画を少し待ってから画像化を実行
       const timer = setTimeout(() => {
-        const canvas = canvasRef.current?.querySelector('canvas');
-        if (canvas) {
-          const url = canvas.toDataURL("image/png");
-          setQrImageUrl(url);
+        if (ticketRef.current) {
+          html2canvas(ticketRef.current, {
+            backgroundColor: null, // 背景色を透明に（元のースタイルを維持）
+            scale: 2, // 高解像度できれいにキャプチャ
+          }).then((canvas) => {
+            setTicketImageUrl(canvas.toDataURL("image/png"));
+          });
         }
-      }, 500); // 描画完了を少し待つ
+      }, 800); // 0.8秒待つ
       return () => clearTimeout(timer);
     }
   }, [view, formData.id]);
@@ -92,34 +99,46 @@ export default function MeexApp() {
 
       {view === 'ticket' && (
         <div className="w-full max-w-sm">
-          <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="text-5xl mb-8 border-b-4 border-black pb-4 italic tracking-tighter truncate">{formData.name} 様</h2>
-            
-            <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
-              {/* iPhoneユーザーが長押しして写真に保存できる「画像」を表示 */}
-              {qrImageUrl ? (
-                <img src={qrImageUrl} alt="Ticket QR" className="w-[180px] h-[180px] pointer-events-auto" />
-              ) : (
-                <div className="w-[180px] h-[180px] flex items-center justify-center italic opacity-30">Generating...</div>
-              )}
-              {/* 裏側で生成するCanvas：非表示にする */}
-              <div ref={canvasRef} className="hidden"><QRCodeCanvas value={formData.id} size={180} /></div>
+          {/* 画像が生成されるまでは、元のDOMを表示（これをキャプチャする） */}
+          {!ticketImageUrl && (
+            <div ref={ticketRef} className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
+              <h2 className="text-5xl mb-8 border-b-4 border-black pb-4 italic tracking-tighter truncate">{formData.name} 様</h2>
+              <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
+                <QRCodeCanvas value={formData.id} size={180} />
+              </div>
+              <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic uppercase leading-tight">1 Drink Ticket</div>
             </div>
+          )}
 
-            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic uppercase mb-8 leading-tight">1 Drink Ticket</div>
-            
-            {/* 保存ガイド：ここが一番大切です */}
-            <div className="bg-red-50 p-4 border-2 border-red-600 rounded-lg text-left">
+          {/* 画像生成中・生成後の表示 */}
+          <div className="mt-8">
+            {ticketImageUrl ? (
+              // 生成された画像を表示（これを長押しさせる）
+              <div className="shadow-[14px_14px_0px_0px_rgba(0,0,0,1)] border-[6px] border-black">
+                <img src={ticketImageUrl} alt="Ticket" className="w-full h-auto pointer-events-auto" />
+              </div>
+            ) : (
+              // 画像生成中のローディング
+              <div className="w-full h-[400px] flex items-center justify-center italic opacity-50 text-lg font-black animate-pulse">
+                チケット画像を生成中...
+              </div>
+            )}
+          </div>
+          
+          {/* 保存ガイド */}
+          {ticketImageUrl && (
+            <div className="bg-red-50 p-4 border-2 border-red-600 rounded-lg text-left mt-8">
               <p className="font-black text-red-600 text-lg mb-2 underline decoration-2">📸 写真(アルバム)に保存する</p>
               <p className="text-sm font-bold leading-relaxed">
-                上の<span className="bg-yellow-200 px-1">QRコードを「長押し」</span>してください。<br/>
+                上の<span className="bg-yellow-200 px-1">チケット画像を「長押し」</span>してください。<br/>
                 メニューが出たら<span className="text-blue-600 underline">「"写真"に保存」</span>を選択！
               </p>
               <div className="mt-4 pt-4 border-t border-red-200 text-[10px] opacity-60 font-normal">
                 ※長押しができない場合は、スクリーンショットを撮って保存してください。
               </div>
             </div>
-          </div>
+          )}
+          
           <p className="mt-8 text-xs opacity-50 italic">2.13 FRI @BAR REEF</p>
         </div>
       )}
