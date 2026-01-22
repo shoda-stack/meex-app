@@ -23,25 +23,14 @@ export default function MeexApp() {
     const html5QrCode = new Html5Qrcode("reader");
     setScanner(html5QrCode);
     setAdminStatus("スキャン待機中...");
-
     try {
       await html5QrCode.start(
         { facingMode: "environment" }, 
-        { 
-          fps: 20, 
-          qrbox: (viewWidth, viewHeight) => {
-            return { width: viewWidth * 0.7, height: viewWidth * 0.7 };
-          }
-        },
-        (decodedText) => {
-          if (navigator.vibrate) navigator.vibrate(200);
-          handleRedeem(decodedText);
-        },
+        { fps: 20, qrbox: (viewWidth, viewHeight) => ({ width: viewWidth * 0.7, height: viewWidth * 0.7 }) },
+        (decodedText) => { if (navigator.vibrate) navigator.vibrate(200); handleRedeem(decodedText); },
         (errorMessage) => {}
       );
-    } catch (err) {
-      setAdminStatus("カメラエラー: 権限を確認してください");
-    }
+    } catch (err) { setAdminStatus("カメラの起動に失敗しました。"); }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -83,11 +72,11 @@ export default function MeexApp() {
         <div className="w-full max-w-sm bg-black text-white p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-8 italic text-[#f3b32a] text-left">混ざりに行く。</h2>
           <form onSubmit={handleRegister} className="space-y-6 text-left">
-            <input type="text" placeholder="お名前" required className="w-full p-4 bg-[#f3b32a] text-black border-none" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-            <input type="text" placeholder="連絡先" required className="w-full p-4 bg-[#f3b32a] text-black border-none" onChange={(e) => setFormData({ ...formData, contact: e.target.value })} />
+            <input type="text" placeholder="お名前" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <input type="text" placeholder="連絡先" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, contact: e.target.value })} />
             <button type="submit" disabled={loading} className="w-full bg-white text-black p-5 text-xl font-black mt-4">{loading ? "送信中..." : "チケットを発行"}</button>
           </form>
-          <button onClick={() => setView('admin-login')} className="mt-10 text-[10px] opacity-20 underline italic uppercase block w-full">Staff Only</button>
+          <button onClick={() => setView('admin-login')} className="mt-10 text-[10px] opacity-20 underline italic uppercase block w-full text-center">Staff Only</button>
         </div>
       )}
 
@@ -100,6 +89,7 @@ export default function MeexApp() {
             </div>
             <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic leading-tight">前売りチケット<br/>（1ドリンク付）¥1,000</div>
           </div>
+          <p className="mt-8 text-xs opacity-50 italic">2.13 FRI @BAR REEF</p>
         </div>
       )}
 
@@ -116,7 +106,7 @@ export default function MeexApp() {
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">SCANNER</h2>
           <div id="reader" className="w-full mb-4 bg-black min-h-[250px] overflow-hidden rounded-lg"></div>
-          <button onClick={startScanning} className="w-full bg-blue-600 text-white p-4 mb-4 rounded-lg font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1">カメラを起動</button>
+          <button onClick={startScanning} className="w-full bg-blue-600 text-white p-4 mb-4 rounded-lg font-black uppercase active:translate-y-1">カメラを起動</button>
           <div className="text-xl mb-8 font-black text-red-600 min-h-[40px] text-center leading-tight">{adminStatus}</div>
           <button onClick={() => { if(scanner) scanner.stop(); setView('register'); }} className="text-sm underline text-gray-500 uppercase">Logout</button>
         </div>
