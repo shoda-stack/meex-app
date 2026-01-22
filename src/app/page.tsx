@@ -18,11 +18,31 @@ export default function MeexApp() {
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.error(err));
   }, []);
 
+  // カメラ設定の強化版
   useEffect(() => {
     if (view === 'admin') {
-      const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-      scanner.render((text) => handleRedeem(text), (err) => {});
-      return () => { scanner.clear().catch(e => {}); };
+      const scanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+          fps: 20, // 読み取り頻度をアップ
+          qrbox: { width: 250, height: 250 }, // 読み取り範囲を明示
+          aspectRatio: 1.0 
+        }, 
+        false
+      );
+      
+      scanner.render(
+        (text) => {
+          // 読み取り成功時にスマホを震わせる（対応機種のみ）
+          if (navigator.vibrate) navigator.vibrate(200);
+          handleRedeem(text);
+        }, 
+        (err) => {}
+      );
+
+      return () => {
+        scanner.clear().catch(e => console.error("Scanner clear error", e));
+      };
     }
   }, [view]);
 
@@ -47,6 +67,9 @@ export default function MeexApp() {
   };
 
   const handleRedeem = async (scanId: string) => {
+    // 同じIDを連続で送らないよう制御
+    if (adminStatus === '確認中...') return;
+
     setAdminStatus('確認中...');
     try {
       const res = await fetch(GAS_URL, {
@@ -60,6 +83,8 @@ export default function MeexApp() {
     } catch (error) {
       setAdminStatus("通信エラー");
     }
+    // 3秒後にステータスをクリアして次のスキャンへ
+    setTimeout(() => setAdminStatus(''), 3000);
   };
 
   const handleUnlock = () => {
@@ -74,7 +99,6 @@ export default function MeexApp() {
         <p className="text-[10px] tracking-[0.3em] border-y-2 border-black py-1 mt-2 inline-block px-4 font-black">VOL.1 @ BAR REEF</p>
       </header>
 
-      {/* 1. 登録画面 */}
       {view === 'register' && (
         <div className="w-full max-w-sm bg-black text-white p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-8 italic text-[#f3b32a] text-left">混ざりに行く。</h2>
@@ -87,7 +111,6 @@ export default function MeexApp() {
         </div>
       )}
 
-      {/* 2. チケット画面（文言変更済み） */}
       {view === 'ticket' && (
         <div className="w-full max-w-sm">
           <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
@@ -95,16 +118,12 @@ export default function MeexApp() {
             <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
               <QRCodeCanvas value={formData.id} size={180} />
             </div>
-            {/* 新しい文言 */}
-            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic leading-tight">
-              前売りチケット<br/>（1ドリンク付）¥1,000
-            </div>
+            <div className="bg-black text-[#f3b32a] py-4 px-2 text-xl font-black italic leading-tight">前売りチケット<br/>（1ドリンク付）¥1,000</div>
           </div>
           <p className="mt-8 text-xs opacity-50 italic">2.13 FRI @BAR REEF</p>
         </div>
       )}
 
-      {/* 3. スタッフ用ログイン画面 */}
       {view === 'admin-login' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center uppercase">Staff Login</h2>
@@ -114,11 +133,10 @@ export default function MeexApp() {
         </div>
       )}
 
-      {/* 4. カメラスキャン画面 */}
       {view === 'admin' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">SCANNER</h2>
-          <div id="reader" className="w-full mb-4"></div>
+          <div id="reader" className="w-full mb-4 overflow-hidden rounded-lg"></div>
           <div className="text-2xl mb-8 font-black text-red-600 min-h-[40px] text-center">{adminStatus}</div>
           <button onClick={() => { setView('register'); setAdminStatus(''); }} className="text-sm underline text-gray-500 uppercase">Logout</button>
         </div>
