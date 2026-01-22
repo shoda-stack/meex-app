@@ -11,21 +11,18 @@ export default function MeexApp() {
   const [loading, setLoading] = useState(false);
   const [passcode, setPasscode] = useState('');
 
-  // あなたのGoogle Apps ScriptのURL（設定済み）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzkBZ7OiY2_rJL7TSlJ533mpHHrn0gLTI_H40YPru_gtIFz9Z907sqVojAAdLuwbDsg/exec"; 
+  const MY_LIFF_ID = "2008941664-iteSq7Q1";
 
   useEffect(() => {
-    liff.init({ liffId: "YOUR_LIFF_ID" }).catch(err => console.error(err));
+    liff.init({ liffId: MY_LIFF_ID }).catch(err => console.error(err));
   }, []);
 
-  // カメラ起動の制御
   useEffect(() => {
     if (view === 'admin') {
       const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
       scanner.render((text) => handleRedeem(text), (err) => {});
-      return () => {
-        scanner.clear().catch(error => console.error("Failed to clear scanner", error));
-      };
+      return () => { scanner.clear().catch(e => {}); };
     }
   }, [view]);
 
@@ -43,7 +40,7 @@ export default function MeexApp() {
         setView('ticket');
       }
     } catch (error) {
-      alert("通信エラーが発生しました。");
+      alert("通信エラー。");
     } finally {
       setLoading(false);
     }
@@ -66,12 +63,8 @@ export default function MeexApp() {
   };
 
   const handleUnlock = () => {
-    if (passcode === "meex0213") {
-      setView('admin');
-      setPasscode('');
-    } else {
-      alert("IDが正しくありません");
-    }
+    if (passcode === "meex0213") { setView('admin'); setPasscode(''); }
+    else { alert("IDが正しくありません"); }
   };
 
   return (
@@ -81,28 +74,20 @@ export default function MeexApp() {
         <p className="text-[10px] tracking-[0.3em] border-y-2 border-black py-1 mt-2 inline-block px-4 font-black">VOL.1 @ BAR REEF</p>
       </header>
 
-      {/* 1. 登録画面 */}
       {view === 'register' && (
         <div className="w-full max-w-sm bg-black text-white p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-8 italic text-[#f3b32a] text-left">混ざりに行く。</h2>
           <form onSubmit={handleRegister} className="space-y-6 text-left">
-            <div>
-              <label className="text-[10px] opacity-50 uppercase">Name</label>
-              <input type="text" placeholder="お名前" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-            </div>
-            <div>
-              <label className="text-[10px] opacity-50 uppercase">Contact</label>
-              <input type="text" placeholder="連絡先" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, contact: e.target.value })} />
-            </div>
+            <input type="text" placeholder="お名前" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            <input type="text" placeholder="連絡先" required className="w-full p-4 bg-[#f3b32a] text-black border-none mt-1" onChange={(e) => setFormData({ ...formData, contact: e.target.value })} />
             <button type="submit" disabled={loading} className="w-full bg-white text-black p-5 text-xl font-black mt-4">{loading ? "送信中..." : "チケットを発行"}</button>
           </form>
-          <button onClick={() => setView('admin-login')} className="mt-10 text-[10px] opacity-20 underline italic uppercase block w-full">Staff Only</button>
+          <button onClick={() => setView('admin-login')} className="mt-10 text-[10px] opacity-20 underline italic uppercase block w-full text-center">Staff Only</button>
         </div>
       )}
 
-      {/* 2. チケット画面 */}
       {view === 'ticket' && (
-        <div className="w-full max-w-sm animate-in zoom-in duration-500">
+        <div className="w-full max-w-sm">
           <div className="bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
             <h2 className="text-5xl mb-8 border-b-4 border-black pb-4 italic tracking-tighter">{formData.name} 様</h2>
             <div className="bg-white p-4 inline-block mb-6 border-2 border-black">
@@ -113,24 +98,15 @@ export default function MeexApp() {
         </div>
       )}
 
-      {/* 3. スタッフ用ログイン画面 */}
       {view === 'admin-login' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
-          <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">STAFF LOGIN</h2>
-          <input
-            type="password"
-            placeholder="合言葉を入力"
-            className="w-full p-4 border-4 border-black mb-4 text-center text-xl"
-            value={passcode}
-            onChange={(e) => setPasscode(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
-          />
+          <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center uppercase">Staff Login</h2>
+          <input type="password" placeholder="合言葉を入力" className="w-full p-4 border-4 border-black mb-4 text-center text-xl" value={passcode} onChange={(e) => setPasscode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleUnlock()} />
           <button onClick={handleUnlock} className="w-full bg-black text-white p-4 mb-4 uppercase">Unlock Camera</button>
           <button onClick={() => setView('register')} className="text-xs underline text-gray-400">Cancel</button>
         </div>
       )}
 
-      {/* 4. 管理者画面 (カメラ) */}
       {view === 'admin' && (
         <div className="w-full max-w-sm bg-white p-8 border-[6px] border-black shadow-[14px_14px_0px_0px_rgba(0,0,0,1)]">
           <h2 className="text-2xl mb-6 italic border-b-2 border-black pb-2 text-center">SCANNER</h2>
@@ -140,9 +116,7 @@ export default function MeexApp() {
         </div>
       )}
 
-      <footer className="mt-auto py-12 text-[9px] tracking-[0.4em] opacity-40 uppercase font-normal leading-loose">
-        Craftbank × Spicecurry Hozan<br/>Stay Mixed, Stay Connected.
-      </footer>
+      <footer className="mt-auto py-12 text-[9px] tracking-[0.4em] opacity-40 uppercase font-normal leading-loose">Craftbank × Spicecurry Hozan<br/>Stay Mixed, Stay Connected.</footer>
     </div>
   );
 }
